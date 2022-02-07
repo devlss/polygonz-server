@@ -1,0 +1,9 @@
+version: '3.8'
+
+services:
+  service1:
+    image: image1:latest
+    container_name: name1
+  service2:
+    image: image2:latest
+    container_name: name2

@@ -1,0 +1,34 @@
+{
+	"editorconfig": true,
+	"useTabs": true,
+	"tabWidth": 4,
+	"printWidth": 160,
+	"endOfLine": "lf",
+	"semi": true,
+	"arrowParens": "always",
+	"singleQuote": true,
+	"bracketSpacing": false,
+	"trailingComma": "none",
+	"overrides": [
+		{
+			"files": ["*.json", ".*rc"],
+			"options": {
+				"singleQuote": false,
+				"tabWidth": 2
+			}
+		},
+		{
+			"files": ["*.md"],
+			"options": {
+				"useTabs": false
+			}
+		},
+		{
+			"files": ["*.yml"],
+			"options": {
+				"useTabs": false,
+				"tabWidth": 2
+			}
+		}
+	]
+}

@@ -1,0 +1,11 @@
+{
+	"extends": ["stylelint-config-idiomatic-order"],
+	"rules": {
+		"indentation": 4,
+		"max-nesting-depth": 4,
+		"color-named": "always-where-possible",
+		"selector-no-qualifying-type": null,
+		"selector-class-pattern": null,
+		"order/properties-alphabetical-order": null
+	}
+}
