@@ -1,4 +1,4 @@
-import type {Model, ModelStatic, Sequelize} from 'sequelize/dist';
+import type {Model, ModelStatic, Sequelize} from 'sequelize';
 
 export type ModelFactory = (sequelize: Sequelize) => ModelStatic<Model>;
 

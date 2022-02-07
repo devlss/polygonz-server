@@ -5,5 +5,5 @@
 		"rootDir": "./app/src",
 		"outDir": "./dist"
 	},
-	"exclude": ["node_modules", "docker"]
+	"exclude": ["node_modules", "docker", "dist"]
 }

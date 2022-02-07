@@ -1,6 +1,6 @@
-import {Request, Response, NextFunction} from 'express';
+import type {Request, Response, NextFunction} from 'express';
 
-export interface IApiRoute {
+export interface IApiCRUDControllers {
 	getAll: ApiMiddleware;
 	getById: ApiMiddleware;
 	create: ApiMiddleware;

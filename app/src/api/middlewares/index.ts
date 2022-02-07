@@ -1,8 +1,7 @@
-import {Request, Response, Errback, NextFunction} from 'express';
 import {validationResult} from 'express-validator';
-import {generateAccesToken, verifyAccessToken} from '../../auth/token.js';
-import {IUserModel} from '../../db/models/User.model.js';
+import {verifyAccessToken} from '../../auth/token.js';
 import {HTTP_CODE} from '../httpCodes.js';
+import type {Request, Response, Errback, NextFunction} from 'express';
 
 /**
  * Middleware для обработки ошибок из валидатора
@@ -24,7 +23,7 @@ export function errorHandlerMiddleware(err: Errback, _req: Request, res: Respons
 		return next(err);
 	}
 	res.status(HTTP_CODE.INTERNAL_SERVER_ERROR).send('Internal server error');
-	console.error(`${err}:`);
+	console.error('Controller error: ', err);
 }
 
 export function securityMiddlewareFactory(roles: string[]) {

@@ -1,7 +1,7 @@
-import type {Sequelize, Transaction, TransactionOptions} from 'sequelize/dist';
 import {connection as mainConnection} from './index.js';
 import {models} from './models/index.js';
 import {IRoleModel} from './models/Role.model.js';
+import type {Sequelize, Transaction, TransactionOptions} from 'sequelize';
 
 export async function runInTransaction(payloadFn: (t: Transaction) => Promise<void>, connection: Sequelize = mainConnection, options?: TransactionOptions) {
 	const transaction = await connection.transaction(options);

@@ -2,95 +2,92 @@ import {CookieOptions, Router} from 'express';
 import {Transaction} from 'sequelize/dist';
 import {checkPassword, hashPassword} from '../../auth/hash.js';
 import {generateAccesToken} from '../../auth/token.js';
-import {createRoles, runInTransaction} from '../../db/helper.js';
+import {createRoles, runInTransaction} from '../../db/helpers.js';
 import {models} from '../../db/models/index.js';
-import {IUserModel} from '../../db/models/User.model.js';
-import {errorWrapper, vPassword, vUsername} from '../helper.js';
+import {errorWrapper} from '../helpers.js';
 import {HTTP_CODE} from '../httpCodes.js';
 import {validatorResultMiddleware} from '../middlewares/index.js';
+import {vUsername, vPassword} from '../validators.js';
+import type {IUserModel} from '../../db/models/User.model.js';
 import type {ApiMiddleware} from '../types.js';
 
-export class AuthRouteControllers {
-	public router = Router();
-	private users;
+const {users} = models;
 
-	constructor() {
-		this.users = models.users;
-		this.router.post('/login', [vUsername, vPassword], validatorResultMiddleware, errorWrapper(this.login));
-		this.router.post('/registration', [vUsername, vPassword], validatorResultMiddleware, errorWrapper(this.registration));
+const login: ApiMiddleware = async (req, res) => {
+	const user = await findUser(req.body.username, ['withPassword', 'withRoles', 'noTs']);
+	if (user && (await checkPassword(req.body.password, user.getDataValue('password')))) {
+		clearPassword(user.get());
+
+		res.status(HTTP_CODE.OK)
+			.cookie(...setToken(user))
+			.json(user);
+	} else {
+		res.status(HTTP_CODE.UNAUTHORIZED).end();
 	}
+};
 
-	login: ApiMiddleware = async (req, res) => {
-		const user = await this.#findUser(req.body.username, ['withPassword', 'withRoles', 'noTs']);
-		if (user && (await checkPassword(req.body.password, user.getDataValue('password')))) {
-			this.#clearPassword(user.get());
-
-			res.status(HTTP_CODE.OK)
-				.cookie(...this.#setToken(user))
-				.json(user);
-		} else {
-			res.status(HTTP_CODE.UNAUTHORIZED).end();
+const registration: ApiMiddleware = async (req, res) => {
+	if (req.body.id) {
+		res.status(HTTP_CODE.BAD_REQUEST).send(`Bad request: ID should not be provided, since it is determined automatically by the database.`);
+	} else {
+		const check = await findUser(req.body.username);
+		if (check) {
+			res.status(HTTP_CODE.BAD_REQUEST).send('User has not been created');
 		}
-	};
 
-	registration: ApiMiddleware = async (req, res) => {
-		if (req.body.id) {
-			res.status(HTTP_CODE.BAD_REQUEST).send(`Bad request: ID should not be provided, since it is determined automatically by the database.`);
-		} else {
-			const check = await this.#findUser(req.body.username);
-			if (check) {
-				res.status(HTTP_CODE.BAD_REQUEST).send('User has not been created');
-			}
+		const password = await hashPassword(req.body.password);
 
-			const password = await hashPassword(req.body.password);
+		let newUser;
+		await runInTransaction(async (transaction: Transaction) => {
+			newUser = await users.scope('noTs').create(
+				{
+					...req.body,
+					password
+				},
+				{transaction}
+			);
+			const newRoles = (await createRoles(req.body.roles, transaction)).map(([data]) => data);
+			//@ts-ignore
+			await newUser.setRoles(newRoles, {transaction});
 
-			let newUser;
-			await runInTransaction(async (transaction: Transaction) => {
-				newUser = await this.users.scope('noTs').create(
-					{
-						...req.body,
-						password
-					},
-					{transaction}
-				);
-				const newRoles = (await createRoles(req.body.roles, transaction)).map(([data]) => data);
-				//@ts-ignore
-				await newUser.setRoles(newRoles, {transaction});
-
-				this.#clearPassword(newUser.get());
-				newUser.setDataValue('roles', newRoles);
-			});
-
-			res.status(HTTP_CODE.CREATED).json(newUser);
-		}
-	};
-
-	#findUser = async (username: string, scopes: string[] = [], exclude: string[] = []) =>
-		this.users.scope(scopes).findOne({
-			where: {username},
-			attributes: {exclude}
+			clearPassword(newUser.get());
+			newUser.setDataValue('roles', newRoles);
 		});
 
-	#clearPassword = <T extends {password: string}>(obj: T) => {
-		delete (<Partial<T>>obj).password;
-	};
+		res.status(HTTP_CODE.CREATED).json(newUser);
+	}
+};
 
-	#setToken = (user: IUserModel): [name: string, val: string, options: CookieOptions] => {
-		return [
-			'token',
-			generateAccesToken(
-				user.getDataValue('id'),
-				user.getDataValue('roles')?.map((roleModel) => roleModel.getDataValue('name'))
-			),
-			{
-				httpOnly: true,
-				maxAge: 3600000,
-				sameSite: 'lax'
-			}
-		];
-	};
+const findUser = async (username: string, scopes: string[] = [], exclude: string[] = []) =>
+	users.scope(scopes).findOne({
+		where: {username},
+		attributes: {exclude}
+	});
 
-	// #transformRoles = <T extends {roles: IRoleModel}>(obj: T) => {
-	// 	delete (<Partial<T>>obj).password;
-	// };
-}
+const clearPassword = <T extends {password: string}>(obj: T) => {
+	delete (<Partial<T>>obj).password;
+};
+
+const setToken = (user: IUserModel): [name: string, val: string, options: CookieOptions] => {
+	return [
+		'token',
+		generateAccesToken(
+			user.getDataValue('id'),
+			user.getDataValue('roles')?.map((roleModel) => roleModel.getDataValue('name'))
+		),
+		{
+			httpOnly: true,
+			maxAge: 3600000,
+			sameSite: 'lax'
+		}
+	];
+};
+
+export const authRouter = Router();
+
+authRouter.post('/login', [vUsername, vPassword], validatorResultMiddleware, errorWrapper(login));
+authRouter.post('/registration', [vUsername, vPassword], validatorResultMiddleware, errorWrapper(registration));
+
+// transformRoles = <T extends {roles: IRoleModel}>(obj: T) => {
+// 	delete (<Partial<T>>obj).password;
+// };

@@ -1,78 +1,76 @@
-import {RequestHandler, Router} from 'express';
+import {Router} from 'express';
 import {hashPassword} from '../../auth/hash.js';
 import {models} from '../../db/models/index.js';
-import {getId, makeEndpoints, vId, vPassword, vUsername} from '../helper.js';
+import {getParamId, makeEndpoints} from '../helpers.js';
 import {HTTP_CODE} from '../httpCodes.js';
-import type {ApiMiddleware, IApiRoute} from '../types.js';
+import {vId, vUsername, vPassword} from '../validators.js';
+import type {ApiMiddleware} from '../types.js';
 
-export class UsersRouteControllers implements IApiRoute {
-	public router = Router();
-	private users;
+const {users} = models;
 
-	constructor() {
-		this.users = models.users;
-		makeEndpoints(this.router, {
-			getAll: [this.getAll],
-			getById: [this.getById, vId],
-			create: [this.create, vUsername, vPassword],
-			update: [this.update, vId, vUsername, vPassword],
-			remove: [this.remove, vId]
-		});
+const getAll: ApiMiddleware = async (_req, res) => {
+	const allUsers = await users.findAll();
+	res.status(HTTP_CODE.OK).json(allUsers);
+};
+
+const getById: ApiMiddleware = async (req, res) => {
+	const id = getParamId(req);
+	const user = await users.findByPk(id);
+	if (user) {
+		res.status(HTTP_CODE.OK).json(user);
+	} else {
+		res.status(HTTP_CODE.NOT_FOUND).end();
 	}
-	getAll: ApiMiddleware = async (_req, res) => {
-		const allUsers = await this.users.findAll();
-		res.status(HTTP_CODE.OK).json(allUsers);
-	};
+};
 
-	getById: ApiMiddleware = async (req, res) => {
-		const id = getId(req);
-		const user = await this.users.findByPk(id);
-		if (user) {
-			res.status(HTTP_CODE.OK).json(user);
-		} else {
-			res.status(HTTP_CODE.NOT_FOUND).end();
+const create: ApiMiddleware = async (req, res) => {
+	if (req.body.id) {
+		delete req.body.id;
+	}
+	const check = await users.findOne({
+		where: {
+			username: req.body.username
 		}
-	};
+	});
+	if (check) {
+		res.status(HTTP_CODE.BAD_REQUEST).send('User already exists');
+	}
+	const password = await hashPassword(req.body.password);
+	const newRecord = await users.create({...req.body, password});
+	res.status(HTTP_CODE.CREATED).json(newRecord);
+};
 
-	create: ApiMiddleware = async (req, res) => {
-		if (req.body.id) {
-			res.status(HTTP_CODE.BAD_REQUEST).send(`Bad request: ID should not be provided, since it is determined automatically by the database.`);
-		} else {
-			const check = await this.users.findOne({
-				where: {
-					username: req.body.username
-				}
-			});
-			if (check) {
-				throw Error('Not created');
-			}
-			const newRecord = await this.users.create({...req.body, password: hashPassword(req.body.password)});
-			res.status(HTTP_CODE.CREATED).json(newRecord);
-		}
-	};
+const update: ApiMiddleware = async (req, res) => {
+	const id = getParamId(req);
 
-	update: ApiMiddleware = async (req, res) => {
-		const id = getId(req);
-
-		if (req.body.id === id) {
-			const newRecord = await this.users.update(req.body, {
-				where: {
-					id
-				}
-			});
-			res.status(HTTP_CODE.OK).json(newRecord);
-		} else {
-			res.status(HTTP_CODE.BAD_REQUEST).send(`Bad request: param ID (${id}) does not match body ID (${req.body.id}).`);
-		}
-	};
-
-	remove: ApiMiddleware = async (req, res) => {
-		const id = getId(req);
-		await this.users.destroy({
+	if (req.body.id === id) {
+		const newRecord = await users.update(req.body, {
 			where: {
 				id
 			}
 		});
-		res.status(HTTP_CODE.OK).end();
-	};
-}
+		res.status(HTTP_CODE.OK).json(newRecord);
+	} else {
+		res.status(HTTP_CODE.BAD_REQUEST).send(`Bad request: param ID (${id}) does not match body ID (${req.body.id})`);
+	}
+};
+
+const remove: ApiMiddleware = async (req, res) => {
+	const id = getParamId(req);
+	await users.destroy({
+		where: {
+			id
+		}
+	});
+	res.status(HTTP_CODE.OK).end();
+};
+
+export const usersRouter = Router();
+
+makeEndpoints(usersRouter, {
+	getAll: [getAll],
+	getById: [getById, vId],
+	create: [create, vUsername, vPassword],
+	update: [update, vId, vUsername, vPassword],
+	remove: [remove, vId]
+});
