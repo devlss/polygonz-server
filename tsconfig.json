@@ -1,0 +1,9 @@
+{
+	"extends": "./tsconfig.template.json",
+	"compilerOptions": {
+		"baseUrl": "./app/src",
+		"rootDir": "./app/src",
+		"outDir": "./dist"
+	},
+	"exclude": ["node_modules", "docker"]
+}

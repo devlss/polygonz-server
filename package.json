@@ -1,0 +1,42 @@
+{
+  "name": "@devlss/poly_server",
+  "version": "0.0.1",
+  "description": "Polygonz server",
+  "main": "dist/index.js",
+  "type": "module",
+  "scripts": {
+		"start": "node -r dotenv/config dist/index.js",
+		"build": "tsc",
+		"serve": "run-p watch:*",
+    "watch:build": "tsc -w",
+    "watch:nodemon": "nodemon -r dotenv/config",
+    "prestart": "npm run build",
+		"prebuild": "npm run clear",
+		"preserve": "npm run clear",
+		"clear": "rimraf ./dist/*"
+  },
+  "author": "devlss",
+  "license": "MIT",
+  "dependencies": {
+    "bcrypt": "^5.0.1",
+    "cookie-parser": "^1.4.6",
+    "express": "^4.17.2",
+    "express-validator": "^6.14.0",
+    "jsonwebtoken": "^8.5.1",
+    "pg": "^8.7.1",
+    "pg-hstore": "^2.3.4",
+    "sequelize": "^6.15.0"
+  },
+  "devDependencies": {
+    "@types/bcrypt": "^5.0.0",
+    "@types/cookie-parser": "^1.4.2",
+    "@types/express": "^4.17.13",
+    "@types/jsonwebtoken": "^8.5.8",
+    "@types/pg": "^8.6.4",
+    "concurrently": "^7.0.0",
+    "dotenv": "^15.0.0",
+    "nodemon": "^2.0.15",
+    "npm-run-all": "^4.1.5",
+    "rimraf": "^3.0.2"
+  }
+}
