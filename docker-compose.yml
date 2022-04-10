@@ -16,7 +16,7 @@ services:
     ports:
       - 5432:5432
     volumes:
-      - ./docker/.var/postgres/data:/var/lib/postgresql/data
+      - ./docker/var/postgres/data:/var/lib/postgresql/data
       - ./docker/config/postgres/docker-entrypoint-initdb.d:/docker-entrypoint-initdb.d
     shm_size: '256m'
 
@@ -31,4 +31,4 @@ services:
     ports:
       - 5001:5001
     volumes:
-      - ./docker/.var/pgadmin:/var/lib/pgadmin
+      - ./docker/var/pgadmin:/var/lib/pgadmin
