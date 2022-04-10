@@ -20,6 +20,7 @@ export function getParamId(req: Request) {
 	return;
 }
 
+// TODO оверхед
 export function makeEndpoints(router: Router, mw: {[name in keyof IApiCRUDControllers]: [ApiMiddleware, ...ValidationChain[]]}) {
 	router.get(`/`, mw.getAll.slice(1), validatorResultMiddleware, errorWrapper(mw.getAll[0]));
 	router.get(`/:id`, mw.getById.slice(1), validatorResultMiddleware, errorWrapper(mw.getById[0]));

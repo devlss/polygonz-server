@@ -30,9 +30,13 @@ export function securityMiddlewareFactory(roles: string[]) {
 	return (req: Request, res: Response, next: NextFunction) => {
 		const token = req.cookies['token'];
 		if (token) {
-			const parsedToken = verifyAccessToken(token);
-			if (roles.every((role) => parsedToken.roles.includes(role))) {
-				return next();
+			try {
+				const parsedToken = verifyAccessToken(token);
+				if (roles.every((role) => parsedToken.roles.includes(role))) {
+					return next();
+				}
+			} catch (error) {
+				return next(error);
 			}
 		}
 		res.status(HTTP_CODE.UNAUTHORIZED).end();
